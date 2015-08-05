@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy import func, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker 
+from _sqlite3 import Row
 
 
 class UpdatePesel(object):
@@ -90,7 +91,7 @@ class UpdatePesel(object):
                 func.trim(Adresy.nra)==nraval,\
                 )        
         q=rawquery.subquery()        
-        #rowcunt = 0
+        rowcunt = 0
         rowcunt = rawquery.count()        
         #rowcunt = q.count()
         if rowcunt ==  0:            
@@ -111,20 +112,38 @@ class UpdatePesel(object):
         self.inBaseFile = ('/'.join((self.workdir_path, self.paternName+'_jest_w_bazie.txt')))
         self.okFile = ('/'.join((self.workdir_path, self.paternName+'_przeszly.txt')))
         self.badPSL = ('/'.join((self.workdir_path, self.paternName+'_zlyPesel.txt')))
-        self.dubleVal = ('/'.join((self.workdir_path, self.paternName+'_blednyWynik.txt')))
+        self.dubleVal = ('/'.join((self.workdir_path, self.paternName+'_blednyWynik_wiekszy_zwrot.txt')))
+        self.otherVal = ('/'.join((self.workdir_path, self.paternName+'_inne.txt')))
         
-        with codecs.open(self.inBaseFile, 'w', 'windows-1250') as f:
-            with codecs.open(self.okFile, 'w', 'windows-1250') as okf:
+        self.inDB = codecs.open(self.inBaseFile, 'w', 'windows-1250')
+        self.okF = codecs.open(self.okFile, 'w', 'windows-1250')
+        self.badFile = codecs.open(self.badPSL, 'w', 'windows-1250')
+        self.dubleF =  codecs.open(self.dubleVal, 'w', 'windows-1250')
+        self.othVal = codecs.open(self.otherVal, 'w', 'windows-1250')
+        
+        for sampleRow in self.plik_lista:
+            newRow = sampleRow[:]
+            if len(sampleRow[22].strip()) <> 11 and re.search(self.paternName, sampleRow[0]):
+                self.badFile.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+            elif len(sampleRow[22].strip()) == 11 and re.search(self.paternName, sampleRow[0]):
+                returnVal = self.updateRow(sampleRow)
+                if returnVal == 1:
+                    self.okF.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+                elif returnVal == 'jest_w_bazie':
+                    self.inDB.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+                elif returnVal == 'dubel':
+                    self.dubleF.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+                else:
+                    self.othVal.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+        self.inDB.close()
+        self.okF.close()
+        self.badFile.close()
+        self.dubleF.close()
+        self.othVal.close()
+        
             
-                for sampleRow in self.plik_lista:                
-                    newRow = sampleRow[:]                
-                    if len(sampleRow[22].strip()) == 11 and re.search(self.paternName, sampleRow[0]):                    
-                        if self.updateRow(sampleRow) <> 1:                        
-                            f.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
-                        else:
-                            okf.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
-                    elif len(sampleRow[22].strip()) <> 11 and re.search(self.paternName, sampleRow[0]):
-                        f.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+         
+                
                 
         statinfo = os.stat(self.inBaseFile)
         if statinfo.st_size == 0:            
@@ -154,9 +173,10 @@ class UpdatePesel(object):
     def generateReport(self):
         
         repFile = self.dbfile_path[:-4]+'_Raport.csv'
-        flist = (self.nonPslFile, self.faultFile, self.okFile, self.nullPslFile)
+        flist = (self.nonPslFile, self.inBaseFile, self.okFile, self.badPSL, self.dubleVal, self.otherVal, self.nullPslFile)
         repDic = {}
         for workFile in flist:
+            print workFile
             if os.path.isfile(workFile):
                 with open(workFile) as f:
                     tmpList = [row.rstrip() for row in f]
@@ -226,7 +246,73 @@ class Adresy(Base):
         return self.naz
 
 
+class TestPesel(object):
+    def __init__(self, pesel_file, db_file_path):
+        
+        self.fname = pesel_file
+        self.dbfile_path = db_file_path
+        self.paternName = os.path.basename(self.dbfile_path)[:-4]
+        self.workdir_path = os.path.dirname(self.fname)
+        
+            
+    def set_pesel_file(self):
 
+        with codecs.open(self.fname, 'r', 'utf-8') as f:
+            self.plik_lista = [ line.rstrip( "\n" ).split('\t') for line in f if re.search(self.paternName, line)]
+        psl_list = []
+        bad_psl = []
+        psl_double = []
+        
+        for row in self.plik_lista:
+            val_psl = row[22].strip()            
+            
+            if len(val_psl) <> 11 :
+            ## zly numer pesel w pliku
+                bad_psl.append(val_psl)                
+            elif val_psl not in psl_list:
+            ## lista bez dubli    
+                psl_list.append(val_psl)
+            else:
+            # duble    
+                psl_double.append(val_psl)
+                
+        self.correct_psl_list = []
+        self.bad_psl_list = []
+        self.double_psl_list = []
+                
+        for row in self.plik_lista:
+            val_psl = row[22].strip()
+            if not val_psl in psl_double and len(val_psl)==11:
+                self.correct_psl_list.append(row)
+            elif len(val_psl) <> 11:
+                self.bad_psl_list.append(row)
+            else:
+                
+                self.double_psl_list.append(row)
+             
+
+   
+        
+        self.bad_pesel_file = ('/'.join((self.workdir_path, self.paternName+'_bledy_pesel.csv')))
+        self.double_pesel_file = ('/'.join((self.workdir_path, self.paternName+'_duble.csv')))
+        self.writeFile(self.bad_pesel_file, self.bad_psl_list)
+        self.writeFile(self.double_pesel_file, self.double_psl_list)
+        
+        
+        
+    def writeFile(self, filename, filelist):
+        with codecs.open(filename, 'w', 'windows-1250') as f:
+            for row in filelist:
+                f.write(';'.join(row)+'\n')
+                
+        
+                
+                
+                
+            
+             
+        
+            
 
 
 
@@ -234,13 +320,17 @@ class Adresy(Base):
 if __name__ == '__main__':
     bdpath = 'e:/__BAZY_ZSIN__/PESEL/BAZY_UPDATE/1815012.fdb'
     connection_string = 'firebird+fdb://SYSDBA:masterkey@localhost/%s'%bdpath
-    popesel = 'e:/__BAZY_ZSIN__/PESEL/BAZY_UPDATE/po_PESEL'
+    popesel = 'e:/__BAZY_ZSIN__/PESEL/BAZY_UPDATE/po_PESEL_tt'
     psl_file = '%s'%popesel
     
+    print os.path.isfile(psl_file)
+    x = TestPesel(psl_file, bdpath)
+    x.set_pesel_file()
     
-    print os.path.dirname(connection_string.split('localhost/')[-1])
-    x = UpdatePesel(db_file_path = connection_string, pesel_file=psl_file)
-    x.minorityReport()
+    #print os.path.dirname(connection_string.split('localhost/')[-1])
+    
+#     x = UpdatePesel(db_file_path = connection_string, pesel_file=psl_file)
+#     x.minorityReport()
        
     
     #x.ud_db()
