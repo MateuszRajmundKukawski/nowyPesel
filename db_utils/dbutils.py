@@ -164,37 +164,45 @@ class UpdatePesel(object):
     def updaet_db(self):
         self.set_pesel_file()
         
-        self.inBaseFile = ('/'.join((self.workdir_path, self.paternName+'_jest_w_bazie.txt')))
-        self.okFile = ('/'.join((self.workdir_path, self.paternName+'_przeszly.txt')))
+        self.inBaseFile = ('/'.join((self.workdir_path, self.paternName+'_jest_w_bazie.csv')))
+        self.okFile = ('/'.join((self.workdir_path, self.paternName+'_przeszly.csv')))
         #self.badPSL = ('/'.join((self.workdir_path, self.paternName+'_zlyPesel.txt')))
-        self.dubleVal = ('/'.join((self.workdir_path, self.paternName+'_blednyWynik_wiekszy_zwrot.txt')))
-        self.otherVal = ('/'.join((self.workdir_path, self.paternName+'_inne.txt')))
+        self.dubleVal = ('/'.join((self.workdir_path, self.paternName+'_blednyWynik_wiekszy_zwrot.csv')))
+        self.otherVal = ('/'.join((self.workdir_path, self.paternName+'_inne.csv')))
+#         
+#         self.inDB = codecs.open(self.inBaseFile, 'w', 'windows-1250')
+#         self.okF = codecs.open(self.okFile, 'w', 'windows-1250')
+#         #self.badFile = codecs.open(self.badPSL, 'w', 'windows-1250')
+#         self.dubleF =  codecs.open(self.dubleVal, 'w', 'windows-1250')
+#         self.othVal = codecs.open(self.otherVal, 'w', 'windows-1250')
         
-        self.inDB = codecs.open(self.inBaseFile, 'w', 'windows-1250')
-        self.okF = codecs.open(self.okFile, 'w', 'windows-1250')
-        #self.badFile = codecs.open(self.badPSL, 'w', 'windows-1250')
-        self.dubleF =  codecs.open(self.dubleVal, 'w', 'windows-1250')
-        self.othVal = codecs.open(self.otherVal, 'w', 'windows-1250')
-        
-        for sampleRow in self.correct_psl_list:
-            newRow = sampleRow[:]
-#             if len(sampleRow[22].strip()) <> 11 and re.search(self.paternName, sampleRow[0]):
-#                 self.badFile.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+        with  codecs.open(self.inBaseFile, 'w', 'windows-1250') as self.inDB, codecs.open(self.okFile, 'w', 'windows-1250') as self.okF, codecs.open(self.dubleVal, 'w', 'windows-1250') as self.dubleF, codecs.open(self.otherVal, 'w', 'windows-1250') as self.othVal:
+            self.inDB.write('\t'.join(self.header_csv)+'\topis\n')
+            self.okF.write('\t'.join(self.header_csv)+'\topis\n')
+            self.dubleF.write('\t'.join(self.header_csv)+'\topis\n')
+            self.othVal.write('\t'.join(self.header_csv)+'\topis\n')
             
-            returnVal = self.updateRow(sampleRow)
-            if returnVal == 1:
-                self.okF.write('\t'.join(newRow).strip('\r')+'\t'+str(returnVal)+'\n')
-            elif returnVal == 'jest_w_bazie':
-                self.inDB.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
-            elif returnVal == 'dubel':
-                self.dubleF.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
-            else:
-                self.othVal.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
-        self.inDB.close()
-        self.okF.close()
-        #self.badFile.close()
-        self.dubleF.close()
-        self.othVal.close()
+        
+        
+            for sampleRow in self.correct_psl_list:
+                newRow = sampleRow[:]
+    #             if len(sampleRow[22].strip()) <> 11 and re.search(self.paternName, sampleRow[0]):
+    #                 self.badFile.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
+                
+                returnVal = self.updateRow(sampleRow)
+                if returnVal == 1:
+                    self.okF.write('\t'.join(newRow).strip('\r')+'\t'+str(returnVal)+'\n')
+                elif returnVal == 'jest_w_bazie':
+                    self.inDB.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
+                elif returnVal == 'dubel':
+                    self.dubleF.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
+                else:
+                    self.othVal.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
+#         self.inDB.close()
+#         self.okF.close()
+#         #self.badFile.close()
+#         self.dubleF.close()
+#         self.othVal.close()
         
             
          
@@ -246,6 +254,7 @@ class UpdatePesel(object):
     def closeConnection(self):
         
         self.connection.close()
+        self.engine = None
                                                         
                                                              
                     
