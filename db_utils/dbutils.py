@@ -183,7 +183,7 @@ class UpdatePesel(object):
             
             returnVal = self.updateRow(sampleRow)
             if returnVal == 1:
-                self.okF.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
+                self.okF.write('\t'.join(newRow).strip('\r')+'\t'+str(returnVal)+'\n')
             elif returnVal == 'jest_w_bazie':
                 self.inDB.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
             elif returnVal == 'dubel':
@@ -228,7 +228,7 @@ class UpdatePesel(object):
     def generateReport(self):
         
         repFile = self.dbfile_path[:-4]+'_Raport.csv'
-        flist = (self.nonPslFile, self.inBaseFile, self.okFile, self.dubleVal, self.otherVal, self.nullPslFile)
+        flist = (self.bad_pesel_file, self.double_pesel_file, self.nonPslFile, self.nullPslFile, self.inBaseFile, self.okFile, self.dubleVal, self.otherVal)
         repDic = {}
         for workFile in flist:
             print workFile
