@@ -93,11 +93,11 @@ class UpdatePesel(object):
     
         for i in range(len(sampleRow)):
             #sampleRow[i]=sampleRow[i].lower()
-            if sampleRow[i]=='':
+            if sampleRow[i].strip()=='':
                 sampleRow[i]=None
         plecval =sampleRow[4]
         try:
-            pslval=str(sampleRow[22]).strip('\r')
+            pslval=str(sampleRow[22]).strip()
         except:
             pslval = sampleRow[22]
         
@@ -134,7 +134,7 @@ class UpdatePesel(object):
         ############################
         if self.session.query(Osoby).filter(Osoby.psl == pslval.strip()).count()>=1:
             return 'jest_w_bazie'
-#         if self.session.query(Osoby).filter(Osoby.psl <> None).count()>=1:
+#         if self.session.query(Osoby).filter(Osoby.psl <> 666).count()>=1:
 #             return 'jest_w_bazie2'
         
         rawquery = self.session.query(Osoby.uid).join(Adresy).\
@@ -154,13 +154,21 @@ class UpdatePesel(object):
         #rowcunt = q.count()
         if rowcunt ==  0:            
             return 'nie_znalazl'
+#         elif rowcunt == 1 :
+#             tt = self.session.query(Osoby.psl).filter(Osoby.uid.in_(q)).all()
+#             if tt[0][0] <> None: print tt[0]
+#             #else: print 'jest None'
+#             return 'jest_w_bazie2'
     
         elif rowcunt == 1:
             
             self.session.query(Osoby).filter(Osoby.uid.in_(q)).\
-                update({Osoby.psl: pslval}, synchronize_session='fetch')            
+                update({Osoby.psl: pslval}, synchronize_session='fetch')
+                            
             self.session.commit()
+            #print self.session.query(Osoby.psl, Osoby.pim).filter(Osoby.uid.in_(q)).all()
             return rowcunt
+        
         elif rowcunt >1:
             return 'dubel'
         
@@ -225,6 +233,7 @@ class UpdatePesel(object):
         #with open(nonPslFile, 'w') as f:
         nonPslList = self.session.query(Osoby).filter(Osoby.psl == None).all()
         with open(self.nonPslFile, 'w') as f:
+            f.write('OSOBA\n')
             for person in nonPslList:
                 f.write(str(person)+'\n')
                 
@@ -233,6 +242,7 @@ class UpdatePesel(object):
         self.nullPslFile = self.dbfile_path[:-4]+'_pusteKoniec.txt'
         nonPslList = self.session.query(Osoby).filter(Osoby.psl == None).all()
         with open(self.nullPslFile, 'w') as f:
+            f.write('OSOBA\n')
             for person in nonPslList:
                 f.write(str(person)+'\n')
         
@@ -246,7 +256,7 @@ class UpdatePesel(object):
             if os.path.isfile(workFile):
                 with open(workFile) as f:
                     tmpList = [row.rstrip() for row in f]
-                    repDic[os.path.basename(workFile)] = str(len(tmpList))
+                    repDic[os.path.basename(workFile)] = str(len(tmpList)-1)
             else:
                 repDic[os.path.basename(workFile)] = 'Null'
         with open(repFile, 'w') as f:
