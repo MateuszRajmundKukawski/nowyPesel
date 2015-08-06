@@ -134,6 +134,9 @@ class UpdatePesel(object):
         ############################
         if self.session.query(Osoby).filter(Osoby.psl == pslval.strip()).count()>=1:
             return 'jest_w_bazie'
+#         if self.session.query(Osoby).filter(Osoby.psl <> None).count()>=1:
+#             return 'jest_w_bazie2'
+        
         rawquery = self.session.query(Osoby.uid).join(Adresy).\
             filter(Osoby.plec==plecval,\
                  Osoby.pim==pimval,\
@@ -177,10 +180,10 @@ class UpdatePesel(object):
 #         self.othVal = codecs.open(self.otherVal, 'w', 'windows-1250')
         
         with  codecs.open(self.inBaseFile, 'w', 'windows-1250') as self.inDB, codecs.open(self.okFile, 'w', 'windows-1250') as self.okF, codecs.open(self.dubleVal, 'w', 'windows-1250') as self.dubleF, codecs.open(self.otherVal, 'w', 'windows-1250') as self.othVal:
-            self.inDB.write('\t'.join(self.header_csv)+'\topis\n')
-            self.okF.write('\t'.join(self.header_csv)+'\topis\n')
-            self.dubleF.write('\t'.join(self.header_csv)+'\topis\n')
-            self.othVal.write('\t'.join(self.header_csv)+'\topis\n')
+            self.inDB.write(';'.join(self.header_csv)+';opis\n')
+            self.okF.write(';'.join(self.header_csv)+';opis\n')
+            self.dubleF.write(';'.join(self.header_csv)+';opis\n')
+            self.othVal.write(';'.join(self.header_csv)+';opis\n')
             
         
         
@@ -191,13 +194,13 @@ class UpdatePesel(object):
                 
                 returnVal = self.updateRow(sampleRow)
                 if returnVal == 1:
-                    self.okF.write('\t'.join(newRow).strip('\r')+'\t'+str(returnVal)+'\n')
-                elif returnVal == 'jest_w_bazie':
-                    self.inDB.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
+                    self.okF.write(';'.join(newRow).strip('\r')+';'+str(returnVal)+'\n')
+                elif returnVal in ('jest_w_bazie', 'jest_w_bazie2'):
+                    self.inDB.write(';'.join(newRow).strip('\r')+';'+returnVal+'\n')
                 elif returnVal == 'dubel':
-                    self.dubleF.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
+                    self.dubleF.write(';'.join(newRow).strip('\r')+';'+returnVal+'\n')
                 else:
-                    self.othVal.write('\t'.join(newRow).strip('\r')+'\t'+returnVal+'\n')
+                    self.othVal.write(';'.join(newRow).strip('\r')+';'+returnVal+'\n')
 #         self.inDB.close()
 #         self.okF.close()
 #         #self.badFile.close()
