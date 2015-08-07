@@ -123,7 +123,7 @@ class UpdatePesel(object):
         else:
             nazval = ''
         
-        #nraval = re.sub('"', '', sampleRow[15])
+  
         try:
             nraval = re.sub('"', '', sampleRow[15])
             nraval = str(nraval)
@@ -137,8 +137,7 @@ class UpdatePesel(object):
         ############################
         if self.session.query(Osoby).filter(Osoby.psl == pslval.strip()).count()>=1:
             return 'jest_w_bazie'
-#         if self.session.query(Osoby).filter(Osoby.psl <> 666).count()>=1:
-#             return 'jest_w_bazie2'
+
         
         rawquery = self.session.query(Osoby.uid).join(Adresy).\
             filter(Osoby.plec==plecval,\
@@ -153,16 +152,12 @@ class UpdatePesel(object):
                 )        
         q=rawquery.subquery()        
         rowcunt = 0
-        #print plecval, pimval, dimval, nzwval, oimval, mimval, nazval, kodval, nraval
+        
         rowcunt = rawquery.count()        
-        #rowcunt = q.count()
-        if rowcunt ==  0:            
-            return 'nie_znalazl'
-#         elif rowcunt == 1 :
-#             tt = self.session.query(Osoby.psl).filter(Osoby.uid.in_(q)).all()
-#             if tt[0][0] <> None: print tt[0]
-#             #else: print 'jest None'
-#             return 'jest_w_bazie2'
+        
+        if rowcunt ==  0: 
+                       
+            return 'nie_znalazl'#        
     
         elif rowcunt == 1:
             
@@ -170,7 +165,7 @@ class UpdatePesel(object):
                 update({Osoby.psl: pslval}, synchronize_session='fetch')
                             
             self.session.commit()
-            #print self.session.query(Osoby.psl, Osoby.pim).filter(Osoby.uid.in_(q)).all()
+           
             return rowcunt
         
         elif rowcunt >1:
@@ -180,18 +175,13 @@ class UpdatePesel(object):
         self.set_pesel_file()
         
         self.inBaseFile = ('/'.join((self.workdir_path, self.paternName+'_jest_w_bazie.csv')))
-        self.okFile = ('/'.join((self.workdir_path, self.paternName+'_przeszly.csv')))
-        #self.badPSL = ('/'.join((self.workdir_path, self.paternName+'_zlyPesel.txt')))
-        self.dubleVal = ('/'.join((self.workdir_path, self.paternName+'_blednyWynik_wiekszy_zwrot.csv')))
+        self.okFile = ('/'.join((self.workdir_path, self.paternName+'_uaktualniono.csv')))     
+        self.dubleVal = ('/'.join((self.workdir_path, self.paternName+'_bledny_Wynik_wiecejOdpowiedzi.csv')))
         self.otherVal = ('/'.join((self.workdir_path, self.paternName+'_inne.csv')))
-#         
-#         self.inDB = codecs.open(self.inBaseFile, 'w', 'windows-1250')
-#         self.okF = codecs.open(self.okFile, 'w', 'windows-1250')
-#         #self.badFile = codecs.open(self.badPSL, 'w', 'windows-1250')
-#         self.dubleF =  codecs.open(self.dubleVal, 'w', 'windows-1250')
-#         self.othVal = codecs.open(self.otherVal, 'w', 'windows-1250')
+
         
         with  codecs.open(self.inBaseFile, 'w', 'windows-1250') as self.inDB, codecs.open(self.okFile, 'w', 'windows-1250') as self.okF, codecs.open(self.dubleVal, 'w', 'windows-1250') as self.dubleF, codecs.open(self.otherVal, 'w', 'windows-1250') as self.othVal:
+            
             self.inDB.write(';'.join(self.header_csv)+';opis\n')
             self.okF.write(';'.join(self.header_csv)+';opis\n')
             self.dubleF.write(';'.join(self.header_csv)+';opis\n')
@@ -200,10 +190,8 @@ class UpdatePesel(object):
         
         
             for sampleRow in self.correct_psl_list:
-                newRow = sampleRow[:]
-    #             if len(sampleRow[22].strip()) <> 11 and re.search(self.paternName, sampleRow[0]):
-    #                 self.badFile.write('\t'.join(newRow).strip('\r')+'\t'+str(self.updateRow(sampleRow))+'\n')
                 
+                newRow = sampleRow[:]                
                 returnVal = self.updateRow(sampleRow)
                 if returnVal == 1:
                     self.okF.write(';'.join(newRow).strip('\r')+';'+str(returnVal)+'\n')
@@ -213,12 +201,7 @@ class UpdatePesel(object):
                     self.dubleF.write(';'.join(newRow).strip('\r')+';'+returnVal+'\n')
                 else:
                     self.othVal.write(';'.join(newRow).strip('\r')+';'+returnVal+'\n')
-#         self.inDB.close()
-#         self.okF.close()
-#         #self.badFile.close()
-#         self.dubleF.close()
-#         self.othVal.close()
-        
+
             
          
                 
@@ -232,40 +215,31 @@ class UpdatePesel(object):
          
     def minorityReport(self):
        
-        self.nonPslFile = self.dbfile_path[:-4]+'_pusteStart.csv'
-        
-        
-        
-        
-    
-        
-        #print nonPslFile
-        #with open(nonPslFile, 'w') as f:
+        self.nonPslFile = self.dbfile_path[:-4]+'_pusteStart.csv' 
         nonPslList =  self.session.query(Osoby).filter(Osoby.psl == None).all()
         nonPslList += self.session.query(Osoby).filter(Osoby.psl == '').all()
-        
-        #print nonPslList
+       
         with open(self.nonPslFile, 'w') as f:
             f.write('OSOBA\n')
             for person in nonPslList:
                 f.write(str(person)+'\n')
                 
     def nullPSL(self):
-        #queryTuple = (Osoby.nzw, Osoby.pim, Osoby.dim, Osoby.oim, Osoby.mim, Adresy.kod, Adresy.naz, Adresy.nra)
-        #print 'in nullPSL '
-        self.nullPslFile = self.dbfile_path[:-4]+'_pusteKoniec.csv'
+       
+        self.nullPslFile = self.dbfile_path[:-4]+'_Brakujace.csv'
         
         nullPslList = self.session.query(Osoby.nzw, Osoby.pim, Osoby.dim, Osoby.oim, Osoby.mim, Adresy.kod, Adresy.naz, Adresy.nra).outerjoin(Adresy).filter(Osoby.psl == None).all()
-        print len(nullPslList)
-        #nullPslList = ''
+     
+      
         nullPslList += self.session.query(Osoby.nzw, Osoby.pim, Osoby.dim, Osoby.oim, Osoby.mim, Adresy.kod, Adresy.naz, Adresy.nra).outerjoin(Adresy).filter(Osoby.psl == '').all()
-        print len(nullPslList)
-        #print nonPslList
+    
         
         with open(self.nullPslFile, 'w') as f:
+            
             f.write('Nazwisko;PImie;DImie;OjcaImie;MatkiImie;kod;Miejscowosc;nr\n')
             for person in nullPslList:
-                person = [str(obj) for obj in person]
+                person = [re.sub('^None$', '', str(obj)) for obj in person]
+                
                 f.write(';'.join(person)+'\n')
         
         
@@ -275,6 +249,7 @@ class UpdatePesel(object):
         flist = (self.bad_pesel_file, self.double_pesel_file, self.nonPslFile, self.nullPslFile, self.inBaseFile, self.okFile, self.dubleVal, self.otherVal)
         repDic = {}
         for workFile in flist:
+            
             print workFile
             if os.path.isfile(workFile):
                 with open(workFile) as f:
@@ -287,7 +262,7 @@ class UpdatePesel(object):
             for _key in sorted(repDic):
                 f.write(';'.join([_key, repDic[_key]]))
                 f.write('\n')
-            #f.write('wiewiorki')
+         
             update_rows = int(repDic[os.path.basename(self.nonPslFile)])-int(repDic[os.path.basename(self.nullPslFile)])
             f.write(';'.join(['Uaktualniono:', str(update_rows)]))
             f.write('\n')
@@ -401,7 +376,7 @@ class TestPesel(object):
    
         
         self.bad_pesel_file = ('/'.join((self.workdir_path, self.paternName+'_bledy_pesel.csv')))
-        self.double_pesel_file = ('/'.join((self.workdir_path, self.paternName+'_duble.csv')))
+        self.double_pesel_file = ('/'.join((self.workdir_path, self.paternName+'_zdublowany_pesel.csv')))
         self.writeFile(self.bad_pesel_file, self.bad_psl_list)
         self.writeFile(self.double_pesel_file, self.double_psl_list)
         
@@ -434,13 +409,7 @@ if __name__ == '__main__':
     x = TestPesel(psl_file, bdpath)
     x.set_pesel_file()
     
-    #print os.path.dirname(connection_string.split('localhost/')[-1])
-    
-#     x = UpdatePesel(db_file_path = connection_string, pesel_file=psl_file)
-#     x.minorityReport()
-       
-    
-    #x.ud_db()
+
     print 'end'
     
 
