@@ -122,11 +122,14 @@ class UpdatePesel(object):
             nazval = '%'+nazval+'%'
         else:
             nazval = ''
+        
+        #nraval = re.sub('"', '', sampleRow[15])
         try:
-            nraval = str(sampleRow[15])
+            nraval = re.sub('"', '', sampleRow[15])
+            nraval = str(nraval)
         except:
             nraval=sampleRow[15]
-        if re.search('0,', nraval):
+        if  nraval is not  None and re.search('0,', nraval):
             nraval= None
 
         ############################
@@ -150,6 +153,7 @@ class UpdatePesel(object):
                 )        
         q=rawquery.subquery()        
         rowcunt = 0
+        #print plecval, pimval, dimval, nzwval, oimval, mimval, nazval, kodval, nraval
         rowcunt = rawquery.count()        
         #rowcunt = q.count()
         if rowcunt ==  0:            
@@ -231,16 +235,21 @@ class UpdatePesel(object):
         self.nonPslFile = self.dbfile_path[:-4]+'_pusteStart.txt'
         #print nonPslFile
         #with open(nonPslFile, 'w') as f:
-        nonPslList = self.session.query(Osoby).filter(Osoby.psl == None).all()
+        nonPslList =  self.session.query(Osoby).filter(Osoby.psl == None).all()
+        nonPslList += self.session.query(Osoby).filter(Osoby.psl == '').all()
+        
+        #print nonPslList
         with open(self.nonPslFile, 'w') as f:
             f.write('OSOBA\n')
             for person in nonPslList:
                 f.write(str(person)+'\n')
                 
     def nullPSL(self):
-         
+        #print 'in nullPSL '
         self.nullPslFile = self.dbfile_path[:-4]+'_pusteKoniec.txt'
         nonPslList = self.session.query(Osoby).filter(Osoby.psl == None).all()
+        nonPslList += self.session.query(Osoby).filter(Osoby.psl == '').all()
+        #print nonPslList
         with open(self.nullPslFile, 'w') as f:
             f.write('OSOBA\n')
             for person in nonPslList:
@@ -261,9 +270,16 @@ class UpdatePesel(object):
                 repDic[os.path.basename(workFile)] = 'Null'
         with open(repFile, 'w') as f:
             
-            for _key, _val in repDic.items():
-                f.write(';'.join([_key, _val]))
+            for _key in sorted(repDic):
+                f.write(';'.join([_key, repDic[_key]]))
                 f.write('\n')
+            #f.write('wiewiorki')
+            update_rows = int(repDic[os.path.basename(self.nonPslFile)])-int(repDic[os.path.basename(self.nullPslFile)])
+            f.write(';'.join(['Uaktualniono:', str(update_rows)]))
+            f.write('\n')
+            control_val = int(repDic[os.path.basename(self.okFile)]) - update_rows                 
+            f.write(';'.join(['Kontrola:', str(control_val)]
+                             ))
     def closeConnection(self):
         
         self.connection.close()
