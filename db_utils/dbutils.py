@@ -232,7 +232,13 @@ class UpdatePesel(object):
          
     def minorityReport(self):
        
-        self.nonPslFile = self.dbfile_path[:-4]+'_pusteStart.txt'
+        self.nonPslFile = self.dbfile_path[:-4]+'_pusteStart.csv'
+        
+        
+        
+        
+    
+        
         #print nonPslFile
         #with open(nonPslFile, 'w') as f:
         nonPslList =  self.session.query(Osoby).filter(Osoby.psl == None).all()
@@ -245,15 +251,23 @@ class UpdatePesel(object):
                 f.write(str(person)+'\n')
                 
     def nullPSL(self):
+        #queryTuple = (Osoby.nzw, Osoby.pim, Osoby.dim, Osoby.oim, Osoby.mim, Adresy.kod, Adresy.naz, Adresy.nra)
         #print 'in nullPSL '
-        self.nullPslFile = self.dbfile_path[:-4]+'_pusteKoniec.txt'
-        nonPslList = self.session.query(Osoby).filter(Osoby.psl == None).all()
-        nonPslList += self.session.query(Osoby).filter(Osoby.psl == '').all()
+        self.nullPslFile = self.dbfile_path[:-4]+'_pusteKoniec.csv'
+        
+        nullPslList = self.session.query(Osoby.nzw, Osoby.pim, Osoby.dim, Osoby.oim, Osoby.mim, Adresy.kod, Adresy.naz, Adresy.nra).outerjoin(Adresy).filter(Osoby.psl == None).all()
+        print len(nullPslList)
+        #nullPslList = ''
+        nullPslList += self.session.query(Osoby.nzw, Osoby.pim, Osoby.dim, Osoby.oim, Osoby.mim, Adresy.kod, Adresy.naz, Adresy.nra).outerjoin(Adresy).filter(Osoby.psl == '').all()
+        print len(nullPslList)
         #print nonPslList
+        
         with open(self.nullPslFile, 'w') as f:
-            f.write('OSOBA\n')
-            for person in nonPslList:
-                f.write(str(person)+'\n')
+            f.write('Nazwisko;PImie;DImie;OjcaImie;MatkiImie;kod;Miejscowosc;nr\n')
+            for person in nullPslList:
+                person = [str(obj) for obj in person]
+                f.write(';'.join(person)+'\n')
+        
         
     def generateReport(self):
         
