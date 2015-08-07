@@ -163,10 +163,7 @@ class UpdetePeselThread(threading.Thread, Tk):
         tmp = x.updaet_db()
         x.nullPSL()
         x.closeConnection()
-        #print 'rtn =', tmp
-        #self.mb.showinfo('tt', 'tt')
-        #self.textvariable.set('po')
-        
+
                  
         if tmp is False:              
             self.textvariable.set('OK')

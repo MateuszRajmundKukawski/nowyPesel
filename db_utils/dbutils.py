@@ -273,15 +273,7 @@ class UpdatePesel(object):
         
         self.connection.close()
         self.engine = None
-                                                        
-                                                             
-                    
-                
-        
-        
-    
-    
-        
+                               
 
 Base = declarative_base()
 
@@ -387,19 +379,8 @@ class TestPesel(object):
             for row in filelist:
                 f.write(';'.join(row)+'\n')
                 
-        
-                
-                
-                
-            
-             
-        
-            
-
-
-
-
 if __name__ == '__main__':
+    
     bdpath = 'e:/__BAZY_ZSIN__/PESEL/BAZY_UPDATE/1815012.fdb'
     connection_string = 'firebird+fdb://SYSDBA:masterkey@localhost/%s'%bdpath
     popesel = 'e:/__BAZY_ZSIN__/PESEL/BAZY_UPDATE/po_PESEL_tt'
